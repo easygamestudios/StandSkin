@@ -16,6 +16,18 @@
     return v.toLocaleString('ru-RU', { minimumFractionDigits: v < 100 ? 2 : 0, maximumFractionDigits: 2 });
   };
   const gold = (c, cls = '') => `<span class="gold ${cls}">${ART.goldIcon()}${fmt(c)}</span>`;
+  // короткая запись для шапки, чтобы кнопка баланса не растягивалась: 20 002 → 20K, 2 000 200 → 2M
+  const fmtShort = (c) => {
+    const v = c / 100;
+    // пороги с учётом округления: 999 999 → 1M, а не 1000K
+    if (v >= 999500) {
+      const m = v / 1e6;
+      return String(m >= 10 ? Math.round(m) : +m.toFixed(1)).replace('.', ',') + 'M';
+    }
+    if (v >= 9995) return Math.round(v / 1e3) + 'K';
+    if (v >= 1000) return String(+(v / 1e3).toFixed(1)).replace('.', ',') + 'K';
+    return fmt(c);
+  };
   const fmtChance = (p) => {
     const v = p * 100;
     if (v >= 10) return v.toFixed(1) + '%';
@@ -130,9 +142,10 @@
       const k = dur ? Math.min(1, (t - t0) / dur) : 1;
       const e = 1 - Math.pow(1 - k, 3);
       shownBalance = Math.round(from + (to - from) * e);
-      el.textContent = fmt(shownBalance);
+      el.textContent = fmtShort(shownBalance);
       if (k < 1) balAnim = requestAnimationFrame(step);
     };
+    box.title = `Баланс: ${fmt(state.balance)} G — промокод и пополнение`;
     balAnim = requestAnimationFrame(step);
     if (delta) {
       box.classList.remove('up', 'down');
