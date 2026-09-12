@@ -89,9 +89,9 @@ img, svg { max-width: 100%; }
 .top-right { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
 .balance {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 9px 5px 7px; border-radius: 9px;
+  padding: 3px 8px 3px 5px; border-radius: 8px;
   background: var(--panel); border: 1px solid var(--line);
-  font-family: var(--head); font-size: 14px; min-width: 0; max-width: 100%;
+  font-family: var(--head); font-size: 13px; line-height: 1; min-width: 0; max-width: 100%;
   cursor: pointer; white-space: nowrap;
   transition: border-color .3s, box-shadow .3s, background .15s, transform .08s;
 }
@@ -101,14 +101,14 @@ img, svg { max-width: 100%; }
 .balance-value { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .balance-hint {
   display: grid; place-items: center; flex-shrink: 0;
-  width: 17px; height: 17px; border-radius: 5px;
-  background: var(--accent-grad); color: #1d1000; font-size: 13px; line-height: 1;
+  width: 14px; height: 14px; border-radius: 4px;
+  background: var(--accent-grad); color: #1d1000; font-size: 11px; line-height: 1;
 }
 .balance.empty { border-color: rgba(255, 138, 0, .55); animation: promoPulse 2s ease-in-out infinite; }
 @keyframes promoPulse {
   50% { box-shadow: 0 0 0 4px rgba(255, 138, 0, .12); border-color: var(--accent); }
 }
-.balance .g-icon { width: 18px; height: 18px; }
+.balance .g-icon { width: 15px; height: 15px; }
 .balance.up { border-color: var(--green); box-shadow: 0 0 18px rgba(61, 220, 132, .35); }
 .balance.down { border-color: var(--red); }
 .icon-btn {
@@ -562,9 +562,10 @@ img.g-icon { object-fit: contain; user-select: none; }
   .upg-top { grid-template-columns: 1fr 1fr; }
   .upg-center { grid-column: 1 / -1; order: -1; }
   .upg-btn { max-width: 340px; }
-  .topbar { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 10px; }
-  .nav { order: 3; width: 100%; margin: 0; overflow-x: auto; }
-  .nav a.active::after { bottom: -2px; }
+  /* шапка всегда одной строкой: логотип, прокручиваемое меню, баланс справа */
+  .topbar { flex-wrap: nowrap; height: 56px; padding: 0 12px; gap: 8px; }
+  .nav { order: 0; width: auto; flex: 1; min-width: 0; margin-left: 6px; }
+  .nav a.active::after { bottom: -9px; }
   .balance { min-width: 0; }
   .hero { grid-template-columns: 1fr; padding: 26px 22px; }
   .hero h1 { font-size: 30px; }
@@ -581,12 +582,12 @@ img.g-icon { object-fit: contain; user-select: none; }
 
 /* ───────── Телефон ───────── */
 @media (max-width: 600px) {
-  .topbar { gap: 8px; padding: 8px 12px; }
-  .logo-mark { width: 32px; height: 32px; font-size: 19px; }
+  .topbar { gap: 6px; padding: 0 10px; height: 52px; }
+  .logo-mark { width: 30px; height: 30px; font-size: 18px; }
   .logo-text { display: none; }
-  .balance { font-size: 13px; padding: 5px 8px 5px 6px; gap: 5px; }
-  .balance .g-icon { width: 16px; height: 16px; }
-  .balance-hint { width: 16px; height: 16px; font-size: 12px; }
+  .balance { font-size: 12px; padding: 3px 7px 3px 5px; gap: 4px; }
+  .balance .g-icon { width: 14px; height: 14px; }
+  .balance-hint { width: 13px; height: 13px; font-size: 10px; }
 
   .live { height: 66px; }
   .live-label { width: 48px; font-size: 10px; }
@@ -648,7 +649,7 @@ img.g-icon { object-fit: contain; user-select: none; }
 @media (max-width: 380px) {
   .items-grid.sm { grid-template-columns: repeat(2, 1fr); }
   .packs { grid-template-columns: 1fr; }
-  .nav a { padding: 9px 10px; }
+  .nav a { padding: 8px 9px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
