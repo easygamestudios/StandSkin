@@ -183,7 +183,9 @@
   // Иконка голды: картинка textures/gold.png, если её положили, иначе рисованная монета
   const goldIcon = (cls = '') => {
     if (TEX.__gold) {
-      return `<img class="g-icon ${cls}" src="textures/${encodeURIComponent(TEX.__gold)}" alt="G" draggable="false">`;
+      // width/height прямо в теге: если файл стилей не загрузится, картинка 512×512 не растянет шапку
+      return `<img class="g-icon ${cls}" src="textures/${encodeURIComponent(TEX.__gold)}" alt="G"
+        width="16" height="16" draggable="false">`;
     }
     return `<svg class="g-icon ${cls}" viewBox="0 0 20 20" aria-hidden="true">
       <circle cx="10" cy="10" r="9" fill="#ffb400"/><circle cx="10" cy="10" r="7" fill="#ffd54a"/>

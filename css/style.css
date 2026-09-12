@@ -48,11 +48,16 @@ img, svg { max-width: 100%; }
 /* ───────── Header ───────── */
 .topbar {
   position: sticky; top: 0; z-index: 50;
-  display: flex; align-items: center; gap: 18px;
-  height: 64px; padding: 0 22px;
+  display: flex; align-items: center; justify-content: center;
+  height: 64px; padding: 0;
   background: rgba(11, 13, 18, .86);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
+}
+/* содержимое шапки живёт в той же колонке, что и страница: баланс не улетает в угол монитора */
+.topbar-inner {
+  display: flex; align-items: center; gap: 18px;
+  width: 100%; max-width: 1280px; height: 100%; padding: 0 22px;
 }
 .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .logo-mark {
@@ -575,7 +580,8 @@ img.g-icon { object-fit: contain; user-select: none; }
   .upg-center { grid-column: 1 / -1; order: -1; }
   .upg-btn { max-width: 340px; }
   /* шапка всегда одной строкой: логотип, прокручиваемое меню, баланс справа */
-  .topbar { flex-wrap: nowrap; height: 56px; padding: 0 12px; gap: 8px; }
+  .topbar { height: 56px; padding: 0; }
+  .topbar-inner { flex-wrap: nowrap; padding: 0 12px; gap: 8px; }
   .nav { order: 0; width: auto; flex: 1; min-width: 0; margin-left: 6px; }
   .nav a.active::after { bottom: -9px; }
   .balance { min-width: 0; }
@@ -594,7 +600,8 @@ img.g-icon { object-fit: contain; user-select: none; }
 
 /* ───────── Телефон ───────── */
 @media (max-width: 600px) {
-  .topbar { gap: 6px; padding: 0 10px; height: 52px; }
+  .topbar { height: 52px; padding: 0; }
+  .topbar-inner { gap: 6px; padding: 0 10px; }
   .logo-mark { width: 30px; height: 30px; font-size: 18px; }
   .logo-text { display: none; }
   .balance { font-size: 12px; padding: 3px 7px 3px 5px; gap: 4px; }
