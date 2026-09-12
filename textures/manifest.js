@@ -1,6 +1,5 @@
 /* Сгенерировано: node tools/ss.js textures — вручную не редактировать */
 window.SS_TEXTURES = {
-  "__gold": "gold.png",
   "g22-pixel-camouflage": "g22-pixel-camouflage.png",
   "m4-tiger": "m4-tiger.png",
   "p350-savannah": "p350-savannah.png",

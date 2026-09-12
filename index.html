@@ -10,7 +10,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <style>
+    /* аварийная разметка шапки: работает, даже если внешний файл стилей не загрузился */
+    .topbar { display: flex; justify-content: center; height: 64px; }
+    .topbar-inner { display: flex; align-items: center; gap: 18px; width: 100%; max-width: 1280px; padding: 0 22px; }
+    .nav { display: flex; min-width: 0; overflow-x: auto; }
+    .top-right { margin-left: auto; flex-shrink: 0; }
+    .balance { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 13px; }
+    .g-icon { width: 16px; height: 16px; }
+    .balance .g-icon { width: 15px; height: 15px; }
+  </style>
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <header class="topbar">
@@ -30,7 +40,6 @@
       <button class="balance" id="balance" type="button" title="Баланс: промокод и пополнение">
         <span class="balance-ico" id="balance-ico"></span>
         <span class="balance-value" id="balance-value">0.00</span>
-        <span class="balance-hint">+</span>
       </button>
     </div>
     </div>
@@ -51,16 +60,16 @@
   <div id="modal-root"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
 
-  <script src="textures/manifest.js?v=7"></script>
-  <script src="js/data.js?v=7"></script>
-  <script src="js/art.js?v=7"></script>
-  <script src="js/promo.js?v=7"></script>
-  <script src="js/core.js?v=7"></script>
-  <script src="js/view-cases.js?v=7"></script>
-  <script src="js/view-upgrade.js?v=7"></script>
-  <script src="js/view-contracts.js?v=7"></script>
-  <script src="js/view-inventory.js?v=7"></script>
-  <script src="js/view-withdraw.js?v=7"></script>
-  <script src="js/main.js?v=7"></script>
+  <script src="textures/manifest.js?v=8"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/art.js?v=8"></script>
+  <script src="js/promo.js?v=8"></script>
+  <script src="js/core.js?v=8"></script>
+  <script src="js/view-cases.js?v=8"></script>
+  <script src="js/view-upgrade.js?v=8"></script>
+  <script src="js/view-contracts.js?v=8"></script>
+  <script src="js/view-inventory.js?v=8"></script>
+  <script src="js/view-withdraw.js?v=8"></script>
+  <script src="js/main.js?v=8"></script>
 </body>
 </html>

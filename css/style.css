@@ -104,11 +104,6 @@ img, svg { max-width: 100%; }
 .balance:active { transform: scale(.97); }
 .balance-ico { display: flex; flex-shrink: 0; }
 .balance-value { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.balance-hint {
-  display: grid; place-items: center; flex-shrink: 0;
-  width: 14px; height: 14px; border-radius: 4px;
-  background: var(--accent-grad); color: #1d1000; font-size: 11px; line-height: 1;
-}
 .balance.empty { border-color: rgba(255, 138, 0, .55); animation: promoPulse 2s ease-in-out infinite; }
 @keyframes promoPulse {
   50% { box-shadow: 0 0 0 4px rgba(255, 138, 0, .12); border-color: var(--accent); }
@@ -606,8 +601,7 @@ img.g-icon { object-fit: contain; user-select: none; }
   .logo-text { display: none; }
   .balance { font-size: 12px; padding: 3px 7px 3px 5px; gap: 4px; }
   .balance .g-icon { width: 14px; height: 14px; }
-  .balance-hint { width: 13px; height: 13px; font-size: 10px; }
-
+  
   .live { height: 66px; }
   .live-label { width: 48px; font-size: 10px; }
   .live-item { flex-basis: 112px; height: 54px; }
