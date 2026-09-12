@@ -420,6 +420,18 @@ img.g-icon { object-fit: contain; user-select: none; }
 .wheel.lose { animation: shake .45s ease; }
 @keyframes wheelWin { 40% { transform: scale(1.06); filter: drop-shadow(0 0 26px rgba(61, 220, 132, .7)); } }
 @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+/* строка состояния под колесом: всегда объясняет, что происходит */
+.upg-status {
+  min-height: 36px; padding: 0 6px; text-align: center;
+  font-size: 13px; line-height: 1.45; color: var(--muted);
+}
+.upg-status b { color: var(--text); font-weight: 700; }
+.upg-status.warn, .upg-status.warn b { color: var(--accent2); }
+.upg-status.good, .upg-status.good b { color: var(--green); }
+/* цели, которые сейчас не подходят под ставку, не прячем — приглушаем */
+.item-card.faded { opacity: .4; }
+.item-card.faded:hover { opacity: .85; }
+
 .mult-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .upg-btn { width: 100%; }
 

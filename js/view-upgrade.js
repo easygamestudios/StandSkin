@@ -1,4 +1,10 @@
-/* StandSkin — апгрейд скинов */
+/* StandSkin — апгрейд скинов.
+ * Правила экрана:
+ *  — выбор игрока (ставка и цель) не сбрасывается сам, никогда;
+ *  — порядок действий любой: сначала цель или сначала ставка;
+ *  — множитель при ставке подбирает цель, а при выбранной цели — подставляет ставку;
+ *  — строка состояния под колесом всегда объясняет, что происходит.
+ */
 (function () {
   'use strict';
   const SS = window.SS, { D, $, $$, esc, gold, fmt } = SS;
@@ -11,13 +17,13 @@
     let sel = new Set((SS.pendingUpgrade || []).slice(0, MAX_ITEMS));
     SS.pendingUpgrade = null;
     let addGold = 0, target = null, busy = false, fast = false, angle = 0, raf = 0;
-    // снимок ставки на время прокрутки: шанс, дуга и карточки не должны меняться, пока крутится
+    // снимок ставки на время прокрутки: шанс, дуга и карточки не меняются, пока крутится
     let lockedStake = [], lockedGold = 0;
     const timers = [];
 
     root.innerHTML = `
       <h1 class="page-title">Апгрейд</h1>
-      <p class="page-sub">Поставь скины и/или голду, выбери цель — чем дороже цель, тем ниже шанс.</p>
+      <p class="page-sub">Ставка и цель выбираются в любом порядке. Чем дороже цель, тем ниже шанс.</p>
       <div class="upg-top">
         <div class="upg-slot">
           <h3>Ваша ставка</h3>
@@ -42,11 +48,12 @@
               <g class="w-arrow" id="u-arrow"><path d="M130 4 L141 24 L119 24Z" fill="#fff"/>
                 <line x1="130" y1="24" x2="130" y2="34" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>
             </svg>
-            <div class="wheel-center"><div class="pct" id="u-pct">0%</div><div class="lbl">шанс</div>
+            <div class="wheel-center"><div class="pct" id="u-pct">—</div><div class="lbl">шанс</div>
               <div class="mult" id="u-mult"></div></div>
           </div>
+          <div class="upg-status" id="u-status"></div>
           <div class="mult-row" id="u-mults">${MULTS.map((m) => `<button class="chip" data-m="${m}" type="button">x${m}</button>`).join('')}</div>
-          <button class="btn btn-primary btn-lg upg-btn" id="u-go" type="button">Апгрейд</button>
+          <button class="btn btn-lg upg-btn is-idle" id="u-go" type="button">Апгрейд</button>
           <label class="toggle"><input type="checkbox" id="u-fast"><i></i>Быстро</label>
         </div>
         <div class="upg-slot target" id="u-target-slot">
@@ -73,13 +80,29 @@
     const el = (id) => $('#' + id, root);
     const arrow = el('u-arrow'), wheel = el('u-wheel');
 
-    const inputValue = () => [...sel].reduce((s, id) => {
+    const stakeValue = () => [...sel].reduce((s, id) => {
       const it = SS.getItem(id);
       return it ? s + D.SKIN_BY_ID[it.s].price : s;
     }, 0) + addGold;
+    const lockedValue = () => lockedStake.reduce((s, sk) => s + sk.price, 0) + lockedGold;
     const chanceFor = (v, skin) => (v > 0 && skin.price > v ? Math.min(UPGRADE_MAX, (v / skin.price) * UPGRADE_FACTOR * 100) : 0);
 
-    function renderInput() {
+    /** Что мешает крутить прямо сейчас. reason = null → всё готово */
+    function state() {
+      const v = stakeValue();
+      const ch = target ? chanceFor(v, target) : 0;
+      let reason = null;
+      if (!v && !target) reason = 'empty';
+      else if (!v) reason = 'no-stake';
+      else if (!target) reason = 'no-target';
+      else if (target.price <= v) reason = 'cheap-target';
+      else if (ch < UPGRADE_MIN) reason = 'low-chance';
+      else if (addGold > SS.state.balance) reason = 'no-money';
+      return { v, ch, reason, ok: !reason };
+    }
+
+    // ───────── отрисовка ─────────
+    function renderStake() {
       if (busy) { // пока крутится — показываем замороженную ставку
         el('u-input').innerHTML = lockedStake.length
           ? `<div class="slot-items ${lockedStake.length === 1 ? 'one' : ''}">${lockedStake.map((s) =>
@@ -94,42 +117,48 @@
         ? `<div class="slot-items ${items.length === 1 ? 'one' : ''}">${items.map((x) =>
           SS.itemCard(x.skin, { cls: 'clickable', attrs: `data-rm="${x.id}"` })).join('')}</div>`
         : `<div class="slot-empty"><span class="big-plus">+</span>Выбери до ${MAX_ITEMS} скинов из инвентаря<br>или добавь голду</div>`;
-      el('u-value').innerHTML = gold(inputValue());
+      el('u-value').innerHTML = gold(stakeValue());
     }
-    const lockedValue = () => lockedStake.reduce((s, sk) => s + sk.price, 0) + lockedGold;
 
     function renderTarget() {
       const slot = el('u-target-slot');
       if (!target) {
-        el('u-target').innerHTML = '<div class="slot-empty"><span class="big-plus">?</span>Выбери скин справа внизу<br>или нажми множитель</div>';
+        el('u-target').innerHTML = '<div class="slot-empty"><span class="big-plus">?</span>Выбери скин в списке справа<br>или нажми множитель</div>';
         el('u-tvalue').textContent = '—';
         slot.style.removeProperty('--rc');
         return;
       }
-      el('u-target').innerHTML = `<div class="slot-items one">${SS.itemCard(target, { cls: 'big' })}</div>`;
+      el('u-target').innerHTML = `<div class="slot-items one">${SS.itemCard(target, { cls: 'big clickable', attrs: 'data-clear-target="1"' })}</div>`;
       el('u-tvalue').innerHTML = gold(target.price);
       slot.style.setProperty('--rc', SS.rarityOf(target).color);
     }
 
     function renderWheel() {
       if (busy) return; // во время прокрутки дуга и процент остаются на месте
-      const v = inputValue();
-      const ch = target ? chanceFor(v, target) : 0;
-      el('u-arc').setAttribute('stroke-dasharray', `${(ch / 100) * C} ${C}`);
-      el('u-pct').textContent = ch ? ch.toFixed(2) + '%' : '0%';
-      el('u-mult').textContent = target && v ? 'x' + (target.price / v).toFixed(2) : '';
-      const ok = !busy && target && v > 0 && target.price > v && ch >= UPGRADE_MIN;
+      const { v, ch, reason, ok } = state();
+      el('u-arc').setAttribute('stroke-dasharray', `${(ok ? ch / 100 : 0) * C} ${C}`);
+      el('u-pct').textContent = ok ? ch.toFixed(2) + '%' : '—';
+      el('u-mult').textContent = ok ? 'x' + (target.price / v).toFixed(2) : '';
+
       const go = el('u-go');
-      // кнопку не блокируем (кроме прокрутки): по заблокированной клик не проходит вообще,
-      // и кажется, что апгрейд «не сработал». Теперь клик всегда объясняет, чего не хватает
-      go.disabled = busy;
+      go.disabled = false;
       go.classList.toggle('btn-primary', ok);
-      go.classList.toggle('is-idle', !ok && !busy);
-      go.textContent = busy ? 'Крутим...'
-        : !v ? 'Добавь ставку'
-          : !target ? 'Выбери цель'
-            : target.price <= v ? 'Цель должна быть дороже'
-              : ch < UPGRADE_MIN ? `Шанс ниже ${UPGRADE_MIN}%` : 'Апгрейд';
+      go.classList.toggle('is-idle', !ok);
+      go.textContent = 'Апгрейд';
+
+      const st = el('u-status');
+      const texts = {
+        empty: 'Поставь скины из инвентаря или голду — и выбери цель. Порядок любой.',
+        'no-stake': `Цель: <b>${esc(target ? target.weapon + ' | ' + target.name : '')}</b> за ${fmt(target ? target.price : 0)} G. Добавь ставку — или нажми множитель, он подставит нужную сумму.`,
+        'no-target': `Ставка <b>${fmt(v)} G</b>. Выбери цель дороже ставки — или нажми множитель, он подберёт её сам.`,
+        'cheap-target': `Ставка <b>${fmt(v)} G</b> дороже цели (${fmt(target ? target.price : 0)} G). Выбери цель подороже или уменьши ставку.`,
+        'low-chance': `Цель слишком дорогая: шанс ниже ${UPGRADE_MIN}%. Выбери цель подешевле или подними ставку.`,
+        'no-money': 'На балансе меньше голды, чем в ставке. Уменьши сумму.',
+      };
+      st.className = 'upg-status' + (ok ? '' : ' warn');
+      st.innerHTML = ok
+        ? `Ставка <b>${fmt(v)} G</b> → <b>${esc(target.weapon)} | ${esc(target.name)}</b> за ${fmt(target.price)} G`
+        : texts[reason];
     }
 
     function renderInv() {
@@ -142,54 +171,72 @@
         : '<div class="empty" style="grid-column:1/-1"><b>Пусто</b>Открой кейс или ставь голду напрямую</div>';
     }
 
+    // список целей показывает все скины всегда — иначе выбранная цель исчезает из списка
     function renderList() {
-      const v = inputValue();
+      const v = stakeValue();
       const q = el('u-search').value.trim().toLowerCase();
       const dir = el('u-sort').value === 'desc' ? -1 : 1;
       const list = D.SKINS
-        .filter((s) => (!v || s.price > v) && (!q || (s.weapon + ' ' + s.name).toLowerCase().includes(q)))
+        .filter((s) => !q || (s.weapon + ' ' + s.name).toLowerCase().includes(q))
         .sort((a, b) => (a.price - b.price) * dir);
       el('u-list').innerHTML = list.map((s) => {
         const ch = chanceFor(v, s);
-        const low = v && ch < UPGRADE_MIN;
+        const cheap = v && s.price <= v;
+        const low = v && !cheap && ch < UPGRADE_MIN;
         return SS.itemCard(s, {
-          cls: 'clickable' + (target === s ? ' selected' : '') + (low ? ' disabled' : ''),
+          cls: 'clickable' + (target === s ? ' selected' : '') + (cheap || low ? ' faded' : ''),
           attrs: `data-skin="${s.id}"`,
-          chance: v ? ch / 100 : null, chanceText: v ? ch.toFixed(2) + '%' : null,
+          chance: v ? 1 : null,
+          chanceText: v ? (cheap ? 'дешевле' : ch.toFixed(2) + '%') : null,
         });
       }).join('') || '<div class="empty" style="grid-column:1/-1">Ничего не найдено</div>';
     }
 
-    function renderAll() {
-      if (target && inputValue() && target.price <= inputValue()) {
-        SS.toast('Ставка стала дороже цели — выбери цель подороже', 'bad');
-        target = null;
-      }
-      renderInput(); renderTarget(); renderWheel(); renderInv(); renderList();
+    function renderAll() { renderStake(); renderTarget(); renderWheel(); renderInv(); renderList(); }
+    const clearMultActive = () => $$('#u-mults .chip', root).forEach((c) => c.classList.remove('active'));
+
+    // ───────── действия ─────────
+    function setGold(c) {
+      addGold = Math.max(0, Math.min(c, SS.state.balance));
+      el('u-gold').value = addGold ? (addGold / 100).toFixed(2) : '';
     }
 
     function pickMult(m) {
-      const v = inputValue();
-      if (!v) { SS.toast('Сначала выбери скины или добавь голду', 'bad'); return; }
-      const want = v * m;
-      const cands = D.SKINS.filter((s) => s.price > v && chanceFor(v, s) >= UPGRADE_MIN);
-      if (!cands.length) { SS.toast('Для такой ставки нет подходящей цели', 'bad'); return; }
-      target = cands.reduce((a, b) => (Math.abs(Math.log(b.price / want)) < Math.abs(Math.log(a.price / want)) ? b : a));
+      const v = stakeValue();
+      if (v) { // ставка есть → подбираем цель под множитель
+        const want = v * m;
+        const cands = D.SKINS.filter((s) => s.price > v && chanceFor(v, s) >= UPGRADE_MIN);
+        if (!cands.length) return SS.toast('Для такой ставки нет подходящей цели — уменьши ставку', 'bad');
+        target = cands.reduce((a, b) => (Math.abs(Math.log(b.price / want)) < Math.abs(Math.log(a.price / want)) ? b : a));
+      } else if (target) { // цель есть, ставки нет → подставляем ставку под множитель
+        const need = Math.max(1, Math.round(target.price / m));
+        if (need > SS.state.balance) {
+          return SS.toast(`Для x${m} нужна ставка ${fmt(need)} G, а на балансе ${fmt(SS.state.balance)} G`, 'bad');
+        }
+        setGold(need);
+      } else {
+        return SS.toast('Сначала выбери цель или поставь скины', 'bad');
+      }
       $$('#u-mults .chip', root).forEach((c) => c.classList.toggle('active', +c.dataset.m === m));
-      renderTarget(); renderWheel(); renderList();
       SS.sfx.click();
+      renderAll();
     }
 
     function go() {
       if (busy) return;
-      const v = inputValue();
-      const ch = target ? chanceFor(v, target) : 0;
-      // раньше кнопка могла молча не сработать — теперь всегда говорим причину
-      if (!v) return SS.toast('Сначала добавь скины или голду в ставку', 'bad');
-      if (!target) return SS.toast('Выбери цель апгрейда', 'bad');
-      if (target.price <= v) return SS.toast('Цель должна быть дороже ставки', 'bad');
-      if (ch < UPGRADE_MIN) return SS.toast(`Шанс ниже ${UPGRADE_MIN}% — выбери цель подешевле`, 'bad');
-      if (addGold > SS.state.balance) return SS.toast('Недостаточно голды на балансе', 'bad');
+      const { v, ch, reason } = state();
+      if (reason) { // кнопка всегда отвечает, почему нельзя
+        const msg = {
+          empty: 'Поставь скины или голду и выбери цель',
+          'no-stake': 'Добавь ставку — скины или голду',
+          'no-target': 'Выбери цель в списке справа',
+          'cheap-target': 'Цель должна быть дороже ставки',
+          'low-chance': `Шанс ниже ${UPGRADE_MIN}% — выбери цель подешевле`,
+          'no-money': 'Недостаточно голды на балансе',
+        };
+        SS.toast(msg[reason], 'bad');
+        return;
+      }
       const roll = SS.rand();
       const win = roll < ch / 100;
       const ids = [...sel].filter((id) => SS.getItem(id)); // предмет мог исчезнуть — продали в другой вкладке
@@ -207,7 +254,11 @@
       SS.changed(-addGold);
       sel = new Set(); addGold = 0; el('u-gold').value = '';
       wheel.classList.remove('win', 'lose');
-      renderWheelBusy(ch);
+      el('u-go').disabled = true;
+      el('u-go').textContent = 'Крутим...';
+      el('u-pct').textContent = ch.toFixed(2) + '%';
+      el('u-status').innerHTML = `Крутим: <b>${fmt(lockedValue())} G</b> → <b>${esc(prize.weapon)} | ${esc(prize.name)}</b>`;
+      renderStake(); renderInv();
 
       const dur = fast ? 1300 : 5200;
       const base = Math.ceil(angle / 360) * 360;
@@ -242,21 +293,14 @@
           SS.sfx.lose();
           SS.toast('Не повезло — ставка сгорела', 'bad');
         }
-        // выигранный скин ещё секунду светится в слоте цели, только потом сброс.
-        // Сбрасываем, только если игрок не начал собирать новый апгрейд — иначе его выбор стирался
-        timers.push(setTimeout(() => {
-          wheel.classList.remove('win', 'lose');
-          const untouched = target === prize && !sel.size && !addGold;
-          if (win && untouched) { target = null; renderAll(); } else renderWheel();
-        }, 1400));
-        renderInput(); renderInv(); renderList(); renderTarget();
+        el('u-status').className = 'upg-status' + (win ? ' good' : ' warn');
+        el('u-status').innerHTML = win
+          ? `Забрал <b>${esc(prize.weapon)} | ${esc(prize.name)}</b> — скин уже в инвентаре`
+          : 'Ставка сгорела. Цель осталась выбранной — собери новую ставку.';
+        renderStake(); renderInv(); renderList(); renderTarget();
+        // только снимаем подсветку колеса; выбор игрока не трогаем
+        timers.push(setTimeout(() => { wheel.classList.remove('win', 'lose'); renderWheel(); }, 1600));
       }, dur + 100));
-    }
-    function renderWheelBusy(ch) {
-      el('u-go').disabled = true;
-      el('u-go').textContent = 'Крутим...';
-      el('u-pct').textContent = ch.toFixed(2) + '%';
-      renderInput(); renderInv();
     }
 
     // ───────── события ─────────
@@ -266,36 +310,44 @@
       const rm = e.target.closest('[data-rm]');
       const sk = e.target.closest('#u-list [data-skin]');
       const mult = e.target.closest('#u-mults [data-m]');
+      const clearTarget = e.target.closest('[data-clear-target]');
       if (inv || rm) {
         const id = +(inv ? inv.dataset.id : rm.dataset.rm);
         if (sel.has(id)) sel.delete(id);
-        else if (sel.size >= MAX_ITEMS) { SS.toast(`Максимум ${MAX_ITEMS} предметов`, 'bad'); return; }
+        else if (sel.size >= MAX_ITEMS) return SS.toast(`Максимум ${MAX_ITEMS} предметов в ставке`, 'bad');
         else sel.add(id);
         SS.sfx.click();
-        $$('#u-mults .chip', root).forEach((c) => c.classList.remove('active'));
+        clearMultActive();
+        renderAll();
+      } else if (clearTarget) {
+        target = null;
+        clearMultActive();
+        SS.sfx.click();
         renderAll();
       } else if (sk) {
         target = D.SKIN_BY_ID[sk.dataset.skin];
-        $$('#u-mults .chip', root).forEach((c) => c.classList.remove('active'));
+        clearMultActive();
         SS.sfx.click();
-        renderTarget(); renderWheel(); renderList();
+        renderAll();
       } else if (mult) pickMult(+mult.dataset.m);
     });
     el('u-gold').addEventListener('input', (e) => {
-      const v = Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100));
-      addGold = Math.min(v, SS.state.balance);
-      if (v > SS.state.balance) e.target.value = (addGold / 100).toFixed(2);
+      const typed = Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100));
+      addGold = Math.min(typed, SS.state.balance);
+      if (typed > SS.state.balance) e.target.value = (addGold / 100).toFixed(2);
+      clearMultActive();
       renderAll();
     });
     el('u-max').addEventListener('click', () => {
       if (busy) return;
-      addGold = SS.state.balance;
-      el('u-gold').value = addGold ? (addGold / 100).toFixed(2) : '';
+      setGold(SS.state.balance);
+      clearMultActive();
       renderAll();
     });
     el('u-clear').addEventListener('click', () => {
       if (busy) return;
-      sel = new Set(); addGold = 0; el('u-gold').value = ''; target = null;
+      sel = new Set(); setGold(0); target = null;
+      clearMultActive();
       renderAll();
     });
     el('u-search').addEventListener('input', renderList);
@@ -306,7 +358,7 @@
     renderAll();
     const off = SS.onChange(() => {
       if (busy) return;
-      if (addGold > SS.state.balance) { addGold = SS.state.balance; el('u-gold').value = addGold ? (addGold / 100).toFixed(2) : ''; }
+      if (addGold > SS.state.balance) setGold(SS.state.balance); // баланс изменился в другом месте
       renderAll();
     });
     return () => { off(); cancelAnimationFrame(raf); timers.forEach(clearTimeout); };
