@@ -104,7 +104,7 @@ img, svg { max-width: 100%; }
 .balance:active { transform: scale(.97); }
 .balance-ico { display: flex; flex-shrink: 0; }
 .balance-value { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.balance.empty { border-color: rgba(255, 138, 0, .55); animation: promoPulse 2s ease-in-out infinite; }
+.balance.no-gold { border-color: rgba(255, 138, 0, .55); animation: promoPulse 2s ease-in-out infinite; }
 @keyframes promoPulse {
   50% { box-shadow: 0 0 0 4px rgba(255, 138, 0, .12); border-color: var(--accent); }
 }

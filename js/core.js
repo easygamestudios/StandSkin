@@ -156,7 +156,7 @@
     }
     $('#inv-count').textContent = state.inv.length;
     // пустой баланс подсвечиваем — намёк, что промокод вводится нажатием на него
-    box.classList.toggle('empty', state.balance === 0 && state.inv.length === 0);
+    box.classList.toggle('no-gold', state.balance === 0 && state.inv.length === 0);
   }
 
   // ───────── звук (WebAudio, без файлов) ─────────
